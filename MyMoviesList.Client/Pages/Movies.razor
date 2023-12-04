@@ -1,0 +1,229 @@
+﻿@page "/Movies"
+@using Microsoft.AspNetCore.Authorization;
+@using MyMoviesList.Shared.Models;
+@using Microsoft.AspNetCore.Components;
+@inject HttpClient client
+
+@* @attribute [Authorize] *@
+
+<h1>Movies</h1>
+
+<div class="row">
+    @foreach (var movie in movies.Take(displayedMoviesCount))
+    {
+        <div class="col-md-4">
+            <div style="display: flex; align-items: center;">
+                <div style="flex: 1;">
+                    <strong style="font-size: 20px;">@movie.Titulo</strong>
+                </div>
+                @{
+                    string backgroundColor;
+                    if (movie.Rating > 7)
+                    {
+                        backgroundColor = "#00cc00";
+                    }
+                    else if (movie.Rating < 5)
+                    {
+                        backgroundColor = "#cc0000";
+                    }
+                    else
+                    {
+                        backgroundColor = "#ccc";
+                    }
+                }
+                <div style="width: 30px; height: 30px; border-radius: 50%; text-align: center; line-height: 30px; background-color: @backgroundColor;">
+                    <strong>@movie.Rating.ToString("0.0")</strong>
+                </div>
+            </div>
+
+            <div style="max-width: 100%; max-height: 150px; overflow: hidden;">
+                <img src="@movie.ImageURL" alt="Movie Poster" style="width: 100%; height: auto;" />
+            </div>
+
+            <div>
+                <strong>Synopsis:</strong> @movie.Sinopsis.Substring(0, Math.Min(movie.Sinopsis.Length, 100))...
+            </div>
+
+            <div>
+                <strong>Genres:</strong> @string.Join(", ", movie.Generos)
+            </div>
+
+            <div>
+                <button class="btn btn-info btn-sm btn-block" @onclick="(() => ShowMovieDetails(movie))">Show more</button>
+            </div>
+            <div>
+                <button class="btn btn-primary btn-sm btn-block" @onclick="(() => AddToMyList(movie))">Add to my list</button>
+            </div>
+        </div>
+    }
+</div>
+
+
+@if (MovieRated != null)
+{
+    <div class="modal" style="display: block;">
+        <div class="modal-body">
+            <h6 class="dropdown-header">Choose a rating:</h6>
+            <button class="btn btn-secondary" @onclick="(() => RateMovie((float) 0))">0</button>
+            <button class="btn btn-secondary" @onclick="(() => RateMovie((float) 1))">1</button>
+            <button class="btn btn-secondary" @onclick="(() => RateMovie((float) 2))">2</button>
+            <button class="btn btn-secondary" @onclick="(() => RateMovie((float) 3))">3</button>
+            <button class="btn btn-secondary" @onclick="(() => RateMovie((float) 4))">4</button>
+            <button class="btn btn-secondary" @onclick="(() => RateMovie((float) 5))">5</button>
+            <button class="btn btn-secondary" @onclick="(() => RateMovie((float) 6))">6</button>
+            <button class="btn btn-secondary" @onclick="(() => RateMovie((float) 7))">7</button>
+            <button class="btn btn-secondary" @onclick="(() => RateMovie((float) 8))">8</button>
+            <button class="btn btn-secondary" @onclick="(() => RateMovie((float) 9))">9</button>
+            <button class="btn btn-secondary" @onclick="(() => RateMovie((float) 10))">10</button>
+        </div>    
+    </div>
+}
+
+
+@if (selectedMovie != null)
+{
+    <div class="modal" style="display: block;">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@selectedMovie.Titulo</h5>
+                    <button type="button" class="close" @onclick="(() => CloseModal())">
+                        <span>&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <img src="@selectedMovie.ImageURL" alt="Movie Poster" style="width: 100%; height: auto;" />
+                    <div>
+                        <strong>Synopsis:</strong> @selectedMovie.Sinopsis
+                    </div>
+                    <div>
+                        <strong>Genres:</strong> @string.Join(", ", selectedMovie.Generos)
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="(() => CloseModal())">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+
+<div class="row-md-12 text-center mt-3">
+        <button class="btn btn-light btn-lg btn-block" @onclick="LoadMore">Load more</button>
+</div>
+
+
+
+
+@code {
+
+    private Movie? selectedMovie;
+    private Movie? MovieRated;
+    float MovieRating = 0;
+    Dictionary<string, int> NumberOfRatings = new Dictionary<string, int>();
+
+
+    private void ShowMovieDetails(Movie movie)
+    {
+        selectedMovie = movie;
+    }
+
+    private void CloseModal()
+    {
+        selectedMovie = null;
+    }
+
+    private void ClearMovieForRating()
+    {
+        MovieRated = null;
+    }
+
+    private void AddToMyList(Movie movie)
+    {
+        MovieRated = movie;
+    }
+
+    private async void RateMovie(float rating)
+    {
+
+        if (MovieRated.Titulo != null)
+        {
+            NumberOfRatings[MovieRated.Titulo] += 1;
+            MovieRated.Rating = (NumberOfRatings[MovieRated.Titulo] - 1) * MovieRated.Rating + rating;
+            MovieRated.Rating = MovieRated.Rating / NumberOfRatings[MovieRated.Titulo];
+        }
+
+        MovieRating = rating;
+        //NewRateMovie().Wait();
+        ClearMovieForRating();
+
+
+    }
+
+    List<Movie> movies = new List<Movie>();
+
+    protected override async Task OnInitializedAsync()
+    {
+
+        movies = await client.GetFromJsonAsync<List<Movie>>("api/AllMoviesList/AllMovies");
+
+
+        @foreach (var movie in movies)
+        {
+            
+            if (movie.Rating == 0)
+            {
+                if (NumberOfRatings.ContainsKey(movie.Titulo))
+                {
+                    NumberOfRatings[movie.Titulo] = 0;
+                }
+                else
+                {
+                    NumberOfRatings[movie.Titulo] = 0;
+                }
+            }
+        }
+
+
+    }
+
+
+    private async Task NewRateMovie()
+    {
+        Movie movie = new Movie();
+        // Set the movie and rating values
+
+        if(MovieRated != null){
+            movie = MovieRated;
+        }
+
+        Console.WriteLine(movie.Titulo);
+
+
+        float rating = MovieRating;
+
+        // Make the HTTP POST request to the API
+        var response = await client.PostAsJsonAsync("api/AllMoviesList/Rating", new { movie, rating });
+
+        // Check if the request was successful
+        if (response.IsSuccessStatusCode)
+        {
+            // Handle success (optional)
+            Console.WriteLine("Movie rated successfully!");
+        }
+        else
+        {
+            // Handle error (optional)
+            Console.WriteLine($"Error: {response.StatusCode}");
+        }
+    }
+
+    private int displayedMoviesCount = 3;
+
+    private void LoadMore()
+    {
+        displayedMoviesCount += 3;
+    }
+
+}

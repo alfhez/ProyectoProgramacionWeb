@@ -1,0 +1,18 @@
+﻿@page "/logout"
+@using MyMoviesList.Client.Pages.Auth;
+@inject NavigationManager navManager
+
+@code{
+    protected override async Task OnInitializedAsync()
+    {
+        await Log_out();
+
+    }
+
+
+    private async Task Log_out()
+    {
+        await Task.Delay(1000);
+        navManager.NavigateTo("/");
+    }
+}

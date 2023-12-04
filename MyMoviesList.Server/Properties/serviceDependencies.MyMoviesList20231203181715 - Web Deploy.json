@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "apis1": {
+      "resourceId": "/subscriptions/[parameters('subscriptionId')]/resourceGroups/[parameters('resourceGroupName')]/providers/Microsoft.ApiManagement/service/MyMoviesListServerapi/apis/MyMoviesListServer",
+      "type": "apis.azure"
+    }
+  }
+}
